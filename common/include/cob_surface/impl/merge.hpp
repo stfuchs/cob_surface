@@ -222,6 +222,13 @@ void cob_surface::Merge<SurfaceT,Policy>::preprocess(
     }
     if (vh.is_valid()) points_to_triangulate.push_back(vh);
   }
+
+  typename SurfaceT::FaceIter f_it = sf_map->faces_begin();
+  for(;f_it != sf_map->faces_end(); ++ f_it)
+  {
+    sf_map->delete_face(*f_it,false);
+  }
+  sf_map->garbage_collection();
   std::cout << "done" << std::endl;
 }
 
@@ -236,6 +243,7 @@ void cob_surface::Merge<SurfaceT,Policy>::triangulate(
    * created triangles. New vertices are being projected on this front in order
    * to find the edge that can be used to form a new triangle.
    */
+
   VertexHandle vh_left_most = v_vh[0];
   VertexHandle vh_right_most = v_vh[0];
   typename std::vector<VertexHandle>::const_iterator vh_it;
@@ -254,9 +262,10 @@ void cob_surface::Merge<SurfaceT,Policy>::triangulate(
   for(vh_it = v_vh.begin(); vh_it!=v_vh.end(); ++vh_it)
     af.insertVertex(*vh_it);
 
-  sf_map->delete_vertex(vh_left_most,false);
-  sf_map->delete_vertex(vh_right_most,false);
-  sf_map->garbage_collection();
+  //sf_map->delete_vertex(vh_left_most);//,false);
+  //sf_map->delete_vertex(vh_right_most);//,false);
+  //sf_map->garbage_collection();
+
   // TODO: delete faces and bounding vertices
 }
 

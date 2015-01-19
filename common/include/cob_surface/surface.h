@@ -176,6 +176,7 @@ namespace cob_surface
     {
       typename SurfaceT::Point p = tf * mapSpace(sf,*v_it);
       projSpace(sf,*v_it) = p.template head<2>();
+      //mapSpace(sf,*v_it)(2) = 0;
     }
   }
 

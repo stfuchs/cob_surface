@@ -198,10 +198,12 @@ typename SurfaceT::VertexHandle cob_surface::MergePolicy<SurfaceT>::createInters
   if (sf1 == sf2) return VertexHandle(); // return invalid vh
   // TODO: test whether new intersection computation is actually faster
   //   then computing the norm twice
-  ScalarT s = (p_proj - projSpace(sf1,vh11)).norm();
-  ScalarT t = (p_proj - projSpace(sf2,vh21)).norm();
+  ScalarT l1 = (projSpace(sf1,vh11) - projSpace(sf1,vh12)).norm();
+  ScalarT l2 = (projSpace(sf2,vh21) - projSpace(sf2,vh22)).norm();
+  ScalarT s = (p_proj - projSpace(sf1,vh11)).norm() / l1;
+  ScalarT t = (p_proj - projSpace(sf2,vh21)).norm() / l2;
   PointT p1 = mapSpace(sf1,vh11) * (1.-s) + mapSpace(sf1,vh12) * s;
-  PointT p2 = mapSpace(sf2,vh21) * (1.-s) + mapSpace(sf2,vh22) * t;
+  PointT p2 = mapSpace(sf2,vh21) * (1.-t) + mapSpace(sf2,vh22) * t;
   VertexHandle vh =  sf_map->add_vertex( .5*(p1+p2) );
   projSpace(sf_map,vh) = p_proj;
   return vh;
@@ -227,10 +229,10 @@ void cob_surface::MergePolicy<SurfaceT>::createBoundingVertices(
   ScalarT xmax = projSpace(sf_map,vh_right)[0];
   ScalarT ymin = projSpace(sf_map,vh_down)[1];
   ScalarT d = alpha*(xmax - xmin);
-  vh_left_bounding = sf_map->add_vertex(PointT(0,0,0));
+  vh_left_bounding = sf_map->add_vertex(PointT(xmin - d,ymin - .1,0));
   projSpace(sf_map,vh_left_bounding)[0] = xmin - d;
   projSpace(sf_map,vh_left_bounding)[1] = ymin - .1;
-  vh_right_bounding = sf_map->add_vertex(PointT(0,0,0));
+  vh_right_bounding = sf_map->add_vertex(PointT(xmax + d,ymin - .1,0));
   projSpace(sf_map,vh_right_bounding)[0] = xmax + d;
   projSpace(sf_map,vh_right_bounding)[1] = ymin - .1;
 }
