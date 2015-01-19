@@ -5,11 +5,11 @@ project(cob_surface)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  cmake_modules
   libopenmesh
   pcl_ros
 )
 find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -83,7 +83,7 @@ find_package(Boost REQUIRED COMPONENTS program_options)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES cob_surface
-#  CATKIN_DEPENDS other_catkin_pkg
+#  CATKIN_DEPENDS libopenmesh
 #  DEPENDS system_lib
 )
 
@@ -97,7 +97,6 @@ include_directories(
   common/include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -109,8 +108,6 @@ include_directories(
 #add_executable(test_openmesh common/src/test_openmesh.cpp)
 #add_executable(test_sweepline common/src/test_sweepline.cpp)
 add_executable(test_mesh_sweepline common/src/test_mesh_sweepline.cpp)
-add_executable(test_intersection common/src/test.cpp)
-#add_executable(test_stl_set common/src/test_stl_set.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -124,8 +121,6 @@ add_executable(test_intersection common/src/test.cpp)
 target_link_libraries(test_mesh_sweepline
    ${catkin_LIBRARIES}
 )
-
-target_link_libraries(test_intersection ${catkin_LIBRARIES})
 
 #############
 ## Install ##
