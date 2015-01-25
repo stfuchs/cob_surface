@@ -229,6 +229,15 @@ namespace cob_surface
    * @param v3 - vertex handle that forms desired face
    * 
    * @return >0 if CCW, <0 if CW
+   *
+   * Note: there are different ways to interpret face orientation:
+   *  - if we assume only CCW faces, then an area > 0 states that
+   *    the face normal is aligned with the z-axis of the coordiante system.
+   *  - if we assume the face normal to be always aligned with the z-axis
+   *    the area shows whether the face is CCW (>0) or CW (<0)
+   * In our case we only consider CCW faces. Since we assume the coords to
+   * be of a camera system, faces we observe from the front should be aligned
+   * opposite to the camera z-axis, hence the area of front faces < 0
    */
   template<typename SurfaceT>
   inline typename SurfaceT::Scalar areaFace(

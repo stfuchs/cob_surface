@@ -76,6 +76,7 @@ namespace cob_surface
     typedef typename SurfaceT::FaceHandle FaceHandle;
     typedef typename SurfaceT::HalfedgeHandle HalfedgeHandle;
 
+    static constexpr ValueT eps = .0001;
 
     /* Definition of operations for the active triangle list.
      *
@@ -98,12 +99,18 @@ namespace cob_surface
     struct DataT
     {
       DataT() {}
-      DataT(const SurfaceT* sf_, const VertexHandle& v1_, const VertexHandle& v2_,
+      DataT(SurfaceT* sf_, const VertexHandle& v1_, const VertexHandle& v2_,
             OperationType op_, const FaceHandle& f1_, const FaceHandle& f2_)
         : sf(sf_), v1(v1_), v2(v2_), op(op_), f1(f1_), f2(f2_)
       {
         StateT d = projSpace(sf_,v1_) - projSpace(sf_,v2_);
-        xy_ratio = d[0] / d[1];
+        /*if (fabs(d[1]) < eps)
+        {
+          projSpace(sf_,v2_)[1] += eps;
+          xy_ratio = d[0] / (d[1]-eps);
+        }
+        else*/
+          xy_ratio = d[0] / d[1];
       }
 
       const SurfaceT* sf;

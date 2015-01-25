@@ -77,14 +77,50 @@ void SweepLine::AdvancingFront<SurfaceT,Policy>::insertVertex(
 {
   NodeIter r = bst_.upper_bound(v);
   NodeIter l = leftNeighbor(r);
-  sf_->add_face(v, *l, *r);
   NodeIter x = bst_.insert(r,v);
+  sf_->add_face(v, *r, *l);
+  //std::cout << (x==r ? "!!equal" : "good") << std::endl;
+  ProjPoint p = projSpace(sf_,v);
+  ProjPoint pr = projSpace(sf_,*r);
+  ProjPoint pl = projSpace(sf_,*l);
 
-  NodeIter tmp = rightNeighbor(r);
+  /*std::cout << "Insert: (" 
+            << p.transpose()<< ") ("
+            << pr.transpose()<< ") ("
+            << pl.transpose()<< ")" << std::endl;*/
+  NodeIter rr = rightNeighbor(r);
+  if(rr != bst_.end())
+  {
+    ProjPoint prr = projSpace(sf_,*rr);
+
+    if( (pr-p)[0] < .005 || (p-pr).dot(prr-pr) > 0 )
+    {
+      //std::cout << "Right fix: ("<<prr.transpose()<< ")" << std::endl;
+      sf_->add_face(v,*rr,*r);
+      bst_.erase(r);
+    }
+    //else std::cout << "Right is good" << std::endl;
+  }
+
+  if(l != bst_.begin())
+  {
+    NodeIter ll = leftNeighbor(l);
+    ProjPoint pll = projSpace(sf_,*ll);
+
+    if( (p-pl)[0] < .005 || (p-pl).dot(pll-pl) > 0 )
+    {
+      //std::cout << "Left fix: ("<<pll.transpose()<< ")" << std::endl;
+      sf_->add_face(v,*l,*ll);
+      bst_.erase(l);
+    }
+    //else std::cout << "Left is good" << std::endl;
+  }
+  return;
+  /*
   bool fix_needed = true;
   while(tmp != bst_.end() && fix_needed)
   {
-    fix_needed = fixNeighbor(r,tmp,x);
+    fix_needed = fixNeighbor(r,x,tmp);
     r = tmp++;
   }
 
@@ -93,8 +129,9 @@ void SweepLine::AdvancingFront<SurfaceT,Policy>::insertVertex(
   while(tmp != bst_.begin() && fix_needed)
   {
     l = tmp--;
-    fix_needed = fixNeighbor(l,x,tmp);
+    fix_needed = fixNeighbor(l,tmp,x);
   }
+  */
 }
 /*
 template<typename SurfaceT, typename Policy>

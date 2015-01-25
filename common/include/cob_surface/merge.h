@@ -108,7 +108,7 @@ namespace cob_surface
       merges sensor surface into map surface
     */
 
-    void initialize(const SurfaceT* sf_sensor, SurfaceT* sf_map);
+    void initialize(SurfaceT* sf_sensor, SurfaceT* sf_map);
 
     void preprocess(SurfaceT* sf_map,
                     std::vector<VertexHandle>& points_to_triangulate,
@@ -148,7 +148,7 @@ namespace cob_surface
       }
     }
 
-    void createEventForEdge(const SurfaceT* sf, const EdgeHandle& eh,
+    void createEventForEdge(SurfaceT* sf, const EdgeHandle& eh,
                             VertexEventMap& event_map);
 
     void transformActiveTrianglesBucket(const sl_DataT& data,

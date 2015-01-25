@@ -102,7 +102,10 @@ namespace SweepLine
     {
       DelegateCompare(SurfaceT* sf) : sf_(sf) { }
       bool operator() (const VertexHandle& a, const VertexHandle& b) {
-        return Policy::vertexLeftRightOrder(a,b,sf_);
+        if (projSpace(sf_,a)[0] == projSpace(sf_,b)[0])
+          return projSpace(sf_,a)[1] > projSpace(sf_,b)[1];
+        return projSpace(sf_,a)[0] < projSpace(sf_,b)[0];
+        //return Policy::vertexLeftRightOrder(a,b,sf_);
       }
 
       SurfaceT* sf_;

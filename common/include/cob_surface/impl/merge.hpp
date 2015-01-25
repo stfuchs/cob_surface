@@ -66,7 +66,7 @@
 
 template<typename SurfaceT, typename Policy>
 void cob_surface::Merge<SurfaceT,Policy>::initialize(
-  const SurfaceT* sf_sensor, SurfaceT* sf_map)
+  SurfaceT* sf_sensor, SurfaceT* sf_map)
 {
   VertexEventMap event_map_sensor;
   VertexEventMap event_map_map;
@@ -222,6 +222,8 @@ void cob_surface::Merge<SurfaceT,Policy>::preprocess(
     }
     if (vh.is_valid()) points_to_triangulate.push_back(vh);
   }
+  std::cout << "Points to triangulate: " 
+            << points_to_triangulate.size() << std::endl;
 
   typename SurfaceT::FaceIter f_it = sf_map->faces_begin();
   for(;f_it != sf_map->faces_end(); ++ f_it)
@@ -229,7 +231,7 @@ void cob_surface::Merge<SurfaceT,Policy>::preprocess(
     sf_map->delete_face(*f_it,false);
   }
   sf_map->garbage_collection();
-  std::cout << "done" << std::endl;
+  std::cout << "done cleaning" << std::endl;
 }
 
 template<typename SurfaceT, typename Policy>
@@ -255,10 +257,13 @@ void cob_surface::Merge<SurfaceT,Policy>::triangulate(
       vh_right_most = *vh_it;
   }
   Policy::createBoundingVertices(
-    sf_map, vh_left_most, vh_right_most, v_vh[0], .3f, vh_left_most, vh_right_most);
+    sf_map, vh_left_most, vh_right_most, v_vh[0], v_vh.back(), .3f, vh_left_most, vh_right_most);
 
   SweepLine::AdvancingFront<SurfaceT,Policy> af(sf_map);
   af.initialize(vh_left_most, vh_right_most);
+  //for(vh_it = v_vh.begin(); vh_it!=v_vh.end(); ++vh_it)
+  //  std::cout << projSpace(sf_map,*vh_it).transpose() << std::endl;
+  
   for(vh_it = v_vh.begin(); vh_it!=v_vh.end(); ++vh_it)
     af.insertVertex(*vh_it);
 
@@ -271,7 +276,7 @@ void cob_surface::Merge<SurfaceT,Policy>::triangulate(
 
 template<typename SurfaceT, typename Policy>
 void cob_surface::Merge<SurfaceT,Policy>::createEventForEdge(
-  const SurfaceT* sf, const EdgeHandle& eh, VertexEventMap& event_map)
+  SurfaceT* sf, const EdgeHandle& eh, VertexEventMap& event_map)
 {
   // determines the order of the edge vertices and checks the
   // orientation of the adjacent faces to create a new event
@@ -323,34 +328,36 @@ void cob_surface::Merge<SurfaceT,Policy>::createEventForEdge(
     VertexHandle v31 = sf->to_vertex_handle(heh31);
     VertexHandle v32 = sf->to_vertex_handle(heh32);
 
-    int state = int(areaFace(sf,v1,v31,v2) > 0) << 1;
-    state |= int(areaFace(sf,v1,v2,v32) > 0);
+    int state = int(areaFace(sf,v1,v31,v2) < 0) << 1;
+    state |= int(areaFace(sf,v1,v2,v32) < 0);
 
     switch(state)
     {
     case(0b01):
-    { // v31: (+), v32: (-) -> cw/ccw -> both left to the edge
-      op = sl_Traits::DISABLE_DOUBLE; break;
-    }
-    case(0b10):
-    { // v31: (-), v32: (+) -> ccw/cw -> both right to the edge
+    { // v31: (+), v32: (-) -> both right to the edge
       op = sl_Traits::ENABLE_DOUBLE; break;
     }
+    case(0b10):
+    { // v31: (-), v32: (+) -> ccw/cw -> both left to the edge
+      op = sl_Traits::DISABLE_DOUBLE; break;
+    }
     case(0b00):
-    { // v31: (+), v32: (+) -> both cw -> v32 right, v31 left
+    { // v31: (+), v32: (+) -> v31 right, v32 left
       // this is actually the case when we look from behind (needs some validation)
       std::swap(heh31,heh32); // fall through
     }
     case(0b11):
-    { // v31: (-), v32: (-) -> both ccw -> v32 left, v31 right
+    { // v31: (-), v32: (-)  -> v31 left, v32 right
       op = sl_Traits::SWITCH; break;
     }
     }
 
-    f1 = sf->face_handle(heh32); // turn off T(v1,v2,v32)
-    f2 = sf->face_handle(heh31); // turn on T(v1,v31,v2)
+    f1 = sf->face_handle(heh31); // turn off T(v1,v31,v2)
+    f2 = sf->face_handle(heh32); // turn on T(v1,v2,v32)
   }
-
+  if (op==2 || op==4)
+    std::cout << "Double OP: " << op << std::endl;
+  
   data_id = sl_.addData(sl_DataT(sf, v1, v2, op, f1, f2));
   updateInsertEvent(sf, v1, data_id, event_map);
   updateRemoveEvent(sf, v2, data_id, event_map);
@@ -371,8 +378,9 @@ void cob_surface::Merge<SurfaceT,Policy>::transformActiveTrianglesBucket(
     typename ActiveTrianglesBucket::iterator it = bucket.begin();
     while(it!=bucket.end())
     {
-      if(it->second == data.f1 || it->second == data.f2) bucket.erase(it++);
-      else ++it;                                              
+      if(it->first != data.sf) ++it;
+      else if(it->second != data.f1 && it->second != data.f2) ++it;
+      else bucket.erase(it++);                                              
     }
     break;
   }
@@ -381,8 +389,10 @@ void cob_surface::Merge<SurfaceT,Policy>::transformActiveTrianglesBucket(
     typename ActiveTrianglesBucket::iterator it = bucket.begin();
     while(it!=bucket.end())
     {
-      if(it->second == data.f1) bucket.erase(it++);
-      else ++it;
+      //assert(it!=bucket.end());
+      if(it->first != data.sf) ++it;
+      else if(it->second != data.f1) ++it;
+      else { bucket.erase(it); break; }
     }
     break;
   }
@@ -391,10 +401,12 @@ void cob_surface::Merge<SurfaceT,Policy>::transformActiveTrianglesBucket(
     typename ActiveTrianglesBucket::iterator it = bucket.begin();
     while(it!=bucket.end())
     {
-      if(it->second == data.f1) bucket.erase(it++);
-      else ++it;
+      //assert(it!=bucket.end());
+      if(it->first != data.sf) ++it;
+      else if(it->second != data.f1) ++it;
+      else { it->second = data.f2; break; }
     }
-    bucket.push_back(std::make_pair(data.sf,data.f2));
+    //bucket.push_back(std::make_pair(data.sf,data.f2));
     break;
   }
   case(sl_Traits::FAKE):

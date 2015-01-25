@@ -211,6 +211,7 @@ namespace cob_surface
       SurfaceT* sf_map,      
       const VertexHandle& vh_left,
       const VertexHandle& vh_right,
+      const VertexHandle& vh_down,
       const VertexHandle& vh_up,
       float alpha,
       VertexHandle& vh_left_bounding,

@@ -88,6 +88,9 @@ int main(int argc, char** argv)
   cob_surface::Surface sf1, sf2;
   //OpenMesh::IO::read_mesh(sf1, argv[1]);
   //OpenMesh::IO::read_mesh(sf2, argv[2]);
+  //std::string in1("/home/steffen/benchmark/meshes/random/square_01.ply");
+  //std::string in2("/home/steffen/benchmark/meshes/random/square_02.ply");
+  //std::string out("/home/steffen/benchmark/meshes/random/square_out.ply");
   std::string in1("/home/steffen/benchmark/meshes/random/random_mesh_flat_01.ply");
   std::string in2("/home/steffen/benchmark/meshes/random/random_mesh_flat_02.ply");
   std::string out("/home/steffen/benchmark/meshes/random/out.ply");

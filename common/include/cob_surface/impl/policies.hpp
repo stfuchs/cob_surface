@@ -223,18 +223,24 @@ void cob_surface::MergePolicy<SurfaceT>::createBoundingVertices(
   const VertexHandle& vh_left,
   const VertexHandle& vh_right,
   const VertexHandle& vh_down,
-  float alpha, VertexHandle& vh_left_bounding, VertexHandle& vh_right_bounding)
+  const VertexHandle& vh_up,
+  float alpha, 
+  VertexHandle& vh_left_bounding,
+  VertexHandle& vh_right_bounding)
 {
   ScalarT xmin = projSpace(sf_map,vh_left)[0];
   ScalarT xmax = projSpace(sf_map,vh_right)[0];
   ScalarT ymin = projSpace(sf_map,vh_down)[1];
-  ScalarT d = alpha*(xmax - xmin);
-  vh_left_bounding = sf_map->add_vertex(PointT(xmin - d,ymin - .1,0));
-  projSpace(sf_map,vh_left_bounding)[0] = xmin - d;
-  projSpace(sf_map,vh_left_bounding)[1] = ymin - .1;
-  vh_right_bounding = sf_map->add_vertex(PointT(xmax + d,ymin - .1,0));
-  projSpace(sf_map,vh_right_bounding)[0] = xmax + d;
-  projSpace(sf_map,vh_right_bounding)[1] = ymin - .1;
+  ScalarT ymax = projSpace(sf_map,vh_up)[1];
+  ScalarT dx = alpha*(xmax - xmin);
+  ScalarT dy = alpha*(ymax - ymin);
+
+  vh_left_bounding = sf_map->add_vertex(PointT(xmin-dx, ymin-dy, 0));
+  projSpace(sf_map,vh_left_bounding)[0] = xmin - dx;
+  projSpace(sf_map,vh_left_bounding)[1] = ymin - dy;
+  vh_right_bounding = sf_map->add_vertex(PointT(xmax+dx, ymin-dy, 0));
+  projSpace(sf_map,vh_right_bounding)[0] = xmax + dx;
+  projSpace(sf_map,vh_right_bounding)[1] = ymin - dy;
 }
 
 #endif
