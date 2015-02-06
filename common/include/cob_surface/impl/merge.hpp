@@ -129,7 +129,7 @@ void cob_surface::Merge<SurfaceT,Policy>::preprocess(
   {
     e = sl_.getCurrentEvent();
     states.push_back(e.state);
-
+    //std::cout << "Event: " << e << std::endl;
     // first: erase all buckets that resulted from recently removed edges
     for(it=e.to_remove.begin(); it!=e.to_remove.end(); ++it) atm.erase(*it);
 
@@ -138,7 +138,17 @@ void cob_surface::Merge<SurfaceT,Policy>::preprocess(
 
     // if event position was not at the beginning, we can use an existing
     // bucket, else use new empty bucket
-    if (sl_.getLeftDataId(d_id)) current_bucket = atm[d_id];
+    if (sl_.getLeftDataId(d_id))
+    {
+      current_bucket = atm[d_id];
+      /*
+      sl_DataT& data = sl_.getData(d_id);
+      std::cout<<d_id<<": "<<data.op<<" ("<<data.f1<<","<<data.f2<<") [ ";
+      typename ActiveTrianglesBucket::iterator it = current_bucket.begin();
+      for(;it!=current_bucket.end();++it)
+        std::cout<<it->first<<":"<<it->second<<" ";
+        std::cout << "]" << std::endl;*/
+    }
 
     if (e.swap_event) // process intersecting edges
     {
@@ -259,13 +269,12 @@ void cob_surface::Merge<SurfaceT,Policy>::triangulate(
   Policy::createBoundingVertices(
     sf_map, vh_left_most, vh_right_most, v_vh[0], v_vh.back(), .3f, vh_left_most, vh_right_most);
 
-  SweepLine::AdvancingFront<SurfaceT,Policy> af(sf_map);
-  af.initialize(vh_left_most, vh_right_most);
-  //for(vh_it = v_vh.begin(); vh_it!=v_vh.end(); ++vh_it)
-  //  std::cout << projSpace(sf_map,*vh_it).transpose() << std::endl;
+  vh_it = v_vh.begin();
+  SweepLine::AdvancingFront<SurfaceT> af(sf_map);
+  af.initialize(vh_left_most, *vh_it++, vh_right_most);
   
-  for(vh_it = v_vh.begin(); vh_it!=v_vh.end(); ++vh_it)
-    af.insertVertex(*vh_it);
+  for(; vh_it!=v_vh.end(); ++vh_it)
+    af.insert(*vh_it);
 
   //sf_map->delete_vertex(vh_left_most);//,false);
   //sf_map->delete_vertex(vh_right_most);//,false);

@@ -110,7 +110,8 @@ namespace cob_surface
           xy_ratio = d[0] / (d[1]-eps);
         }
         else*/
-          xy_ratio = d[0] / d[1];
+        assert(d[1]!=0);
+        xy_ratio = d[0] / d[1];
       }
 
       const SurfaceT* sf;

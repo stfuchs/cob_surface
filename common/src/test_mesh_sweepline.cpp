@@ -88,15 +88,22 @@ int main(int argc, char** argv)
   cob_surface::Surface sf1, sf2;
   //OpenMesh::IO::read_mesh(sf1, argv[1]);
   //OpenMesh::IO::read_mesh(sf2, argv[2]);
-  //std::string in1("/home/steffen/benchmark/meshes/random/square_01.ply");
-  //std::string in2("/home/steffen/benchmark/meshes/random/square_02.ply");
-  //std::string out("/home/steffen/benchmark/meshes/random/square_out.ply");
-  std::string in1("/home/steffen/benchmark/meshes/random/random_mesh_flat_01.ply");
-  std::string in2("/home/steffen/benchmark/meshes/random/random_mesh_flat_02.ply");
-  std::string out("/home/steffen/benchmark/meshes/random/out.ply");
-  OpenMesh::IO::read_mesh(sf1, in1);
-  OpenMesh::IO::read_mesh(sf2, in2);
-  
+  std::string folder("/home/goa-sf/git/surface_ws/src/cob_surface/data/");
+  //std::string in1("mesh_simple_flat_sensor.ply");
+  //std::string in2("mesh_simple_flat_map.ply");
+  std::string in1("mesh_random_flat_sensor.ply");
+  std::string in2("mesh_random_flat_map.ply");
+  std::string out("out.ply");
+  if (!OpenMesh::IO::read_mesh(sf1, folder+in1))
+  {
+    std::cerr << "Failed to read " << folder+in1 << std::endl;
+    return -1;
+  }
+  if (!OpenMesh::IO::read_mesh(sf2, folder+in2))
+  {
+    std::cerr << "Failed to read " << folder+in2 << std::endl;
+    return -1;
+  }  
 
   start = system_clock::now();
 
@@ -110,6 +117,10 @@ int main(int argc, char** argv)
   elapsed = duration_cast<microseconds>(end-start);
   std::cout << "Merging took " << elapsed.count()/1000000. <<" sec"<<std::endl;
 
-  OpenMesh::IO::write_mesh(sf2,out);
+  if (!OpenMesh::IO::write_mesh(sf2,folder+out))
+  {
+    std::cerr << "Failed to write " << folder+out << std::endl;
+    return -1;
+  }
   return 0;
 }

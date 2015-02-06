@@ -108,6 +108,14 @@ namespace SweepLine
       std::vector<DataId> to_insert;
       std::vector<DataId> to_remove;
       bool swap_event;
+
+      friend std::ostream& operator<< (std::ostream& os, const EventT& e) {
+        os << e.state.transpose() << " o:[";
+        for (int i=0; i<e.to_remove.size(); ++i) os<<" "<<e.to_remove[i];
+        os << " ] i:[";
+        for (int i=0; i<e.to_insert.size(); ++i) os<<" "<<e.to_insert[i];
+        return os << " ] swap: " << e.swap_event;
+      }
     };
 
     friend inline const bool operator< (const EventT& lhs, const EventT& rhs)

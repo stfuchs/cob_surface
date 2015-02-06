@@ -161,6 +161,28 @@ namespace cob_surface
     {
       return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]);
     }
+
+    /** 
+     * tests if d lies in circumcircle of T(a,b,c)
+     * 
+     * @param a 2d point of triangle
+     * @param b 2d point of triangle
+     * @param c 2d point of triangle
+     * @param d 2d point to test for
+     * 
+     * @return true if inside circumcircle
+     */
+    template<typename ScalarT, typename PointT>
+    inline bool inCircumcircle(const PointT& a, const PointT& b,
+                               const PointT& c, const PointT& d)
+    {
+      ScalarT dd = d.dot(d);
+      Eigen::Matrix<ScalarT,3,3> m;
+      m << (a-d).transpose(), a.dot(a)-dd,
+           (b-d).transpose(), b.dot(b)-dd,
+           (c-d).transpose(), c.dot(c)-dd;
+      return m.determinant() < 0;
+    }
   }
 }
 

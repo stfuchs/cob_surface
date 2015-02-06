@@ -60,146 +60,158 @@
  *
  ****************************************************************/
 
-#ifndef COB_SURFACE_ADVANCING_FRONT_H
-#define COB_SURFACE_ADVANCING_FRONT_H
-
-/*
- * Domiter, Vid, and Borut Žalik. "Sweep‐line algorithm for constrained Delaunay
- * triangulation." International Journal of Geographical Information Science
- * 22.4 (2008): 449-462.
- *
- */
+#ifndef COB_SURFACE_ADVANCING_FRONT_HPP
+#define COB_SURFACE_ADVANCING_FRONT_HPP
 
 #include <set>
-
-#include "cob_surface/sweepline.h"
+#include <cob_surface/sweepline.h>
+#include <cob_surface/geometry.h>
 
 namespace SweepLine
 {
-  /**
-   * @class AdvancingFront
-   * @brief maintains the current edges of the triangulated surface
-   *
-   * A new constrained delaunay triangulation is constructed while iteratively
-   * inserting new points and edges. The insertation process has to be performed
-   * in an ordered way.
-   *
-   * @tparam Traits - defines surface type and its elements (VertexT,..)
-   * @tparam Policy - provides policies to manipulate the specified surface
-   *
-   */
-  template<typename SurfaceT, typename Policy>
-  class AdvancingFront
+  template<typename SurfaceT>
+  struct AdvancingFront
   {
-  public:
     typedef typename SurfaceT::VertexHandle VertexHandle;
     typedef typename SurfaceT::HalfedgeHandle HalfedgeHandle;
+    typedef typename SurfaceT::FaceHandle FaceHandle;
     typedef typename SurfaceT::Point PointT;
     typedef typename SurfaceT::ProjPoint ProjPoint;
+    typedef typename SurfaceT::Scalar ScalarT;
 
-    // delegates the compare operation of BST to definition by policy
-    struct DelegateCompare
+    struct Compare
     {
-      DelegateCompare(SurfaceT* sf) : sf_(sf) { }
+      Compare(SurfaceT* sf) : sf_(sf) {}
       bool operator() (const VertexHandle& a, const VertexHandle& b) {
         if (projSpace(sf_,a)[0] == projSpace(sf_,b)[0])
           return projSpace(sf_,a)[1] > projSpace(sf_,b)[1];
         return projSpace(sf_,a)[0] < projSpace(sf_,b)[0];
-        //return Policy::vertexLeftRightOrder(a,b,sf_);
       }
-
       SurfaceT* sf_;
     };
 
-    typedef typename std::set<VertexHandle, DelegateCompare>::iterator NodeIter;
+    typedef typename std::set<VertexHandle, Compare>::iterator NodeIter;
+    std::set<VertexHandle,Compare> bst_;
+    SurfaceT* sf_;
 
-  public:
-    AdvancingFront(SurfaceT* sf)
-      : bst_(DelegateCompare(sf))
-      , sf_(sf)
-    { }
-
-    ~AdvancingFront() { }
+    AdvancingFront(SurfaceT* sf) : bst_(Compare(sf)), sf_(sf) {}
 
     /** 
-     * Provide a list of vertices that form the initial advancing front
-     * This list should contain at least 2 vertices that encapsulate
-     * all vertices (orthogonal to the insert direction)
-     * that are going to be inserted in the process. Hence:
-     * v_1 = x_min - alpha(x_max - x_min)
-     * v_2 = x_max + alpha(x_max - x_min)
-     * with alpha > 0 (eg. 0.3)
+     * define first triangle
      * 
-     * @param begin iterator to first vertex
-     * @param end  iterator past the last element (not being used)
+     * @param a left most vertex (temporary)
+     * @param b middle vertex
+     * @param c right most vertex (temporary)
      */
-    template<typename IteratorT>
-    inline void initialize(const IteratorT& begin, const IteratorT& end) {
-      bst_.insert(begin,end);
-    }
-
-    inline void initialize(const VertexHandle& vh1, const VertexHandle& vh2) {
-      bst_.insert(vh1);
-      bst_.insert(vh2);
-    }
-
-    /** 
-     * Provide a list of vertices who's face should be deleted.
-     * This step can be used to undo the insertation of auxiliary vertices
-     * introduced with the initialization step.
-     * 
-     * @param begin iterator to first vertex
-     * @param end  iterator past the last element (not being used)
-     */
-    template<typename IteratorT>
-    void finalize(const IteratorT& begin, const IteratorT& end);
-
-    void insertVertex(const VertexHandle& v);
-
-    /** 
-     * Checks if a new triangle n1->n2->n3 (CCW) needs to be created.
-     * if so, n1 is being deleted from AF, since it is now hidden by n2->n3
-     * It checks the angle between n1->n2 and n1->n3
-     * 
-     * @param n1 - The node that might be hidden by n2->n3, becomes invalid
-     * @param n2 - Node 2
-     * @param n3 - Node 3
-     * 
-     * @return - returns true if we have to check the next one too
-     */
-    inline bool fixNeighbor(const NodeIter& n1,
-                            const NodeIter& n2,
-                            const NodeIter& n3)
+    inline void initialize(const VertexHandle& a,
+                           const VertexHandle& b,
+                           const VertexHandle& c)
     {
-      ProjPoint p12 = projSpace(sf_,*n2) - projSpace(sf_,*n1);
-      ProjPoint p13 = projSpace(sf_,*n3) - projSpace(sf_,*n1);
-      if (p12.dot(p13) > 0)
+      sf_->add_face(a,b,c);
+      std::cout<<"init: "<< projSpace(sf_,a).transpose() << " "
+               << projSpace(sf_,b).transpose() << " "
+               << projSpace(sf_,c).transpose() << std::endl;
+      bst_.insert(c);
+      bst_.insert(b);
+      bst_.insert(a);
+    }
+
+    inline void insert(const VertexHandle& v)
+    {
+      NodeIter r = bst_.upper_bound(v);
+      NodeIter l = leftNeighbor(r);
+      NodeIter x = bst_.insert(r,v);
+
+      ProjPoint p = projSpace(sf_,v);
+      ProjPoint pr = projSpace(sf_,*r);
+      ProjPoint pl = projSpace(sf_,*l);
+      //std::cout << "insert: " << p.transpose() << std::endl;
+      FaceHandle fh = sf_->add_face(v,*r,*l);
+      if(!fh.is_valid())
       {
-        sf_->add_face(*n1,*n2,*n3);
-        bst_.erase(n1);
+        std::cout << "M: " << p.transpose() << " "
+                  << pr.transpose() << " "
+                  << pl.transpose() << std::endl;
+        return;
+      }
+      HalfedgeHandle heh_outer = sf_->halfedge_handle(v);
+      assert( sf_->is_boundary(heh_outer) );
+      HalfedgeHandle heh_l = sf_->opposite_halfedge_handle(heh_outer);
+      HalfedgeHandle heh_r = sf_->next_halfedge_handle(heh_l);
+      delaunayFix(sf_->next_halfedge_handle(heh_r));
+
+      NodeIter rr = rightNeighbor(r);
+      if(rr!=bst_.end())
+      {
+
+        ProjPoint prr = projSpace(sf_,*rr);
+        if( (pr-p)[0] < .005 || (p-pr).dot(prr-pr) > 0 )
+        {
+          fh = sf_->add_face(v,*rr,*r);
+          if(!fh.is_valid())
+          {
+            std::cout << "R: " << p.transpose() << " "
+                      << prr.transpose() << " "
+                      << pr.transpose() << std::endl;
+            return;
+          }
+          bst_.erase(r);
+        }
+      }
+
+      if(l != bst_.begin())
+      {
+        NodeIter ll = leftNeighbor(l);
+        ProjPoint pll = projSpace(sf_,*ll);
+
+        if( (p-pl)[0] < .005 || (p-pl).dot(pll-pl) > 0 )
+        {
+          fh = sf_->add_face(v,*l,*ll);
+          if(!fh.is_valid())
+          {
+            std::cout << "L: " << p.transpose() << " "
+                      << pl.transpose() << " "
+                      << pll.transpose() << std::endl;
+            return;
+          }
+          bst_.erase(l);
+        }
+      }
+    }
+
+    bool delaunayFix(const HalfedgeHandle& heh)
+    {
+      VertexHandle a = sf_->to_vertex_handle(heh);
+      VertexHandle b = sf_->to_vertex_handle(sf_->next_halfedge_handle(heh));
+      HalfedgeHandle oheh = sf_->opposite_halfedge_handle(heh);
+      VertexHandle c = sf_->to_vertex_handle(oheh);
+      VertexHandle d = sf_->to_vertex_handle(sf_->next_halfedge_handle(oheh));
+      /*std::cout << projSpace(sf_,a).transpose() << std::endl;
+      std::cout << projSpace(sf_,b).transpose() << std::endl;
+      std::cout << projSpace(sf_,c).transpose() << std::endl;
+      std::cout << projSpace(sf_,d).transpose() << std::endl;*/
+
+      if (cob_surface::Geometry::inCircumcircle<ScalarT>(
+            projSpace(sf_,a),projSpace(sf_,b),projSpace(sf_,c),projSpace(sf_,d)))
+      {
+        //std::cout << "Flip: " << sf_->is_flip_ok(sf_->edge_handle(heh)) << std::endl;
+        //return true;
+        //assert( sf_->is_flip_ok(sf_->edge_handle(heh)) );
+        if(!sf_->is_flip_ok(sf_->edge_handle(heh)))
+        {
+          std::cout << "flip not ok" << std::endl;
+          std::cout << projSpace(sf_,a).transpose() << std::endl;
+          std::cout << projSpace(sf_,b).transpose() << std::endl;
+          std::cout << projSpace(sf_,c).transpose() << std::endl;
+          std::cout << projSpace(sf_,d).transpose() << std::endl;
+          return false;
+        }
+        sf_->flip(sf_->edge_handle(heh));
         return true;
       }
       return false;
     }
-
-    //void insertEdge(const VertexHandle& v1, const VertexHandle& v2);
-
-    inline float vertexPos(const PointT& v, const PointT& e, const PointT& p) {
-      return e.cross(v-p).dot(p);
-    }
-
-    inline HalfedgeHandle advance(const HalfedgeHandle& heh) {
-      return sf_->next_halfedge_handle(sf_->opposite_halfedge_handle(heh));
-    }
-
-  private:
-
-    std::set<VertexHandle,DelegateCompare> bst_;
-    SurfaceT* sf_;
-
   };
 }
-
-#include "cob_surface/impl/advancing_front.hpp"
 
 #endif

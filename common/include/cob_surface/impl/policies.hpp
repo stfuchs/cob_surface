@@ -166,7 +166,7 @@ bool cob_surface::MergePolicy<SurfaceT>::createVertex(
     ScalarT u, v, w;
     Geometry::barycentric2d(
       projSpace(sf_sensor,vh_sensor), projSpace(sf_map,vh1),
-      projSpace(sf_map,vh3),  projSpace(sf_map,vh3), u, v, w);
+      projSpace(sf_map,vh2),  projSpace(sf_map,vh3), u, v, w);
     p_map[i] = u * mapSpace(sf_map,vh1) + v * mapSpace(sf_map,vh2)
       + w * mapSpace(sf_map,vh3);
     ScalarT dist = (mapSpace(sf_sensor,vh_sensor) - p_map[i]).norm();
