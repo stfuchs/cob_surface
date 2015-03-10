@@ -88,11 +88,11 @@ int main(int argc, char** argv)
   cob_surface::Surface sf1, sf2;
   //OpenMesh::IO::read_mesh(sf1, argv[1]);
   //OpenMesh::IO::read_mesh(sf2, argv[2]);
-  std::string folder("/home/goa-sf/git/surface_ws/src/cob_surface/data/");
+  std::string folder("/home/steffen/git/catkin_ws/src/surface/data/");
   //std::string in1("mesh_simple_flat_sensor.ply");
   //std::string in2("mesh_simple_flat_map.ply");
-  std::string in1("mesh_random_flat_sensor.ply");
-  std::string in2("mesh_random_flat_map.ply");
+  std::string in1("mesh_simple_flat_sensor.ply");
+  std::string in2("mesh_simple_flat_map.ply");
   std::string out("out.ply");
   if (!OpenMesh::IO::read_mesh(sf1, folder+in1))
   {
